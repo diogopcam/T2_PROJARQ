@@ -1,0 +1,42 @@
+services:
+  nameserver:
+    build: NamingServer
+    image: nameserver  # Nome da imagem gerada
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+  scaa:
+    build: ProjArq
+    image: scaa
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      nameserver:
+        condition: service_healthy  # Aguarda até que o nameserver esteja saudável
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://nameserver:8761/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  asscache:
+      build: AssCache
+      image: asscache
+      ports:
+        - "8080:8080"
+      networks:
+        - currency-network
+      depends_on:
+        nameserver:
+          condition: service_healthy  # Aguarda até que o nameserver esteja saudável
+      healthcheck:
+        test: [ "CMD", "curl", "-f", "http://nameserver:8761/actuator/health" ]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+networks:
+  currency-network:
